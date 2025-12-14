@@ -76,6 +76,8 @@ project-root/
 
 
 ## Setup Instructions
+- git clone "URL OF THE REPO"
+
 ###  Backend Setup
 - cd backend
 - pip install -r requirements.txt
@@ -118,4 +120,5 @@ project-root/
 <img width="1920" height="1008" alt="Screenshot 2025-12-14 225118" src="https://github.com/user-attachments/assets/cf0e124d-be3c-41f3-b570-aa78c4bed631" />
 
 ![emailAlert](https://github.com/user-attachments/assets/9bcf817a-bc1c-4cce-9223-b068477a454f)
+
 
