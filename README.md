@@ -54,25 +54,25 @@ The system triggers alerts for the following sounds:
 
 
 ## Project Structure
-project-root/
+project-root/<br>
 │
-├── backend/
-│ ├─ ─ app.py
-│ ├─ ─ model_utils.py
-│ ├─ ─ audio_utils.py
-│ ├─ ─ alert.py
-│ ├─ ─ model/
-│ │ ├─ ─ ─ esc50_crnn_model.h5
-│ │ └─ ─ ─ label_encoder.pkl
-│ └ ── .env
+├── backend/<br>
+│ ├─ ─ app.py<br>
+│ ├─ ─ model_utils.py<br>
+│ ├─ ─ audio_utils.py<br>
+│ ├─ ─ alert.py<br>
+│ ├─ ─ model/<br>
+│ │ ├─ ─ ─ esc50_crnn_model.h5<br>
+│ │ └─ ─ ─ label_encoder.pkl<br>
+│ └ ── .env<br>
 │
-├── frontend/
-│ ├─ ─ src/
-│ │ └─ ─ ─ App.js
-│ └─ ─ ─ package.json
+├── frontend/<br>
+│ ├─ ─ src/<br>
+│ │ └─ ─ ─ App.js<br>
+│ └─ ─ ─ package.json<br>
 │ 
-├── README.md
-└── .gitignore
+├── README.md<br>
+└── .gitignore<br>
 
 
 ## Setup Instructions
@@ -120,5 +120,6 @@ project-root/
 <img width="1920" height="1008" alt="Screenshot 2025-12-14 225118" src="https://github.com/user-attachments/assets/cf0e124d-be3c-41f3-b570-aa78c4bed631" />
 
 ![emailAlert](https://github.com/user-attachments/assets/9bcf817a-bc1c-4cce-9223-b068477a454f)
+
 
 
