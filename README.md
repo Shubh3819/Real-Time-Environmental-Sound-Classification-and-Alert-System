@@ -36,7 +36,6 @@ The system triggers alerts for the following sounds:
 
 ##  Tech Stack
 
-
 ### Frontend
 - React
 - Web Audio API
@@ -58,19 +57,19 @@ The system triggers alerts for the following sounds:
 project-root/
 │
 ├── backend/
-│ ├── app.py
-│ ├── model_utils.py
-│ ├── audio_utils.py
-│ ├── alert.py
-│ ├── model/
-│ │ ├── esc50_crnn_model.h5
-│ │ └── label_encoder.pkl
-│ └── .env
+│ ├─ ─ app.py
+│ ├─ ─ model_utils.py
+│ ├─ ─ audio_utils.py
+│ ├─ ─ alert.py
+│ ├─ ─ model/
+│ │ ├─ ─ ─ esc50_crnn_model.h5
+│ │ └─ ─ ─ label_encoder.pkl
+│ └ ── .env
 │
 ├── frontend/
-│ ├── src/
-│ │ └── App.js
-│ └── package.json
+│ ├─ ─ src/
+│ │ └─ ─ ─ App.js
+│ └─ ─ ─ package.json
 │ 
 ├── README.md
 └── .gitignore
@@ -113,3 +112,10 @@ project-root/
 - Cloud inference
 - Multi-microphone support
 - Custom retraining interface
+
+<img width="1920" height="1008" alt="Screenshot 2025-12-14 215006" src="https://github.com/user-attachments/assets/a7224f97-8a22-410e-85c8-f2cbb336993a" />
+
+<img width="1920" height="1008" alt="Screenshot 2025-12-14 225118" src="https://github.com/user-attachments/assets/cf0e124d-be3c-41f3-b570-aa78c4bed631" />
+
+![emailAlert](https://github.com/user-attachments/assets/9bcf817a-bc1c-4cce-9223-b068477a454f)
+
