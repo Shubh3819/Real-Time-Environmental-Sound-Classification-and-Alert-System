@@ -1,6 +1,6 @@
 A full-stack real time environmental sound monitoring system that listens to live microphone audio, classifies sounds using a deep learning model (CRNN with Attention), visualizes waveforms, maintains detection history, and sends alert notifications for dangerous sounds.
 
-## 🚀 Features
+## Features
 
 - Real-time microphone recording (browser-based)
 - Deep Learning audio classification(CRNN + Attention)
@@ -78,38 +78,38 @@ project-root/
 
 ## Setup Instructions
 ###  Backend Setup
-cd backend
-pip install -r requirements.txt
+- cd backend
+- pip install -r requirements.txt
 
 ###  Frontend Setup
-cd frontend
-npm install
+- cd frontend
+- npm install
 
 #### Run Backend
-uvicorn app:app --reload
+- uvicorn app:app --reload
 
 #### Run Frontend
-npm start
+- npm start
 
 ## .env
-EMAIL_SENDER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-EMAIL_RECEIVER=your_email@gmail.com
+- EMAIL_SENDER=your_email@gmail.com
+- EMAIL_PASSWORD=your_app_password
+- EMAIL_RECEIVER=your_email@gmail.com
 (For App Password you need to setup app password in Google Accounts->App Passwords->Setup)
 
 ##Backend Port=http://localhost:8000
 ##Frontend Port=http://localhost:3000
 
 **Email Alerts**
-Alerts are sent only when:
-Sound is classified as dangerous
-Confidence exceeds threshold(>0.75)
-Same sound is detected consistently (temporal smoothing)
-This prevents false positives.
+- Alerts are sent only when:
+- Sound is classified as dangerous
+- Confidence exceeds threshold(>0.75)
+- Same sound is detected consistently (temporal smoothing)
+- This prevents false positives.
 
 **Future Improvements**
-Push notifications (mobile)
-Docker deployment
-Cloud inference
-Multi-microphone support
-Custom retraining interface
+- Push notifications (mobile)
+- Docker deployment
+- Cloud inference
+- Multi-microphone support
+- Custom retraining interface
