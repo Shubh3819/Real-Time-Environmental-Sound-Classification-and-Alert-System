@@ -1,70 +1,125 @@
-# Getting Started with Create React App
+A full-stack real time environmental sound monitoring system that listens to live microphone audio, classifies sounds using a deep learning model (CRNN with Attention), visualizes waveforms, maintains detection history, and sends alert notifications for dangerous sounds.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Features
 
-## Available Scripts
+- Real-time microphone recording (browser-based)
+- Deep Learning audio classification(CRNN + Attention)
+- Live waveform visualization
+- Prediction history timeline
+- Dangerous sound detection with confidence threshold
+- Email alert notifications
+- Modern UI with visual danger indicators
+- Temporal smoothing to reduce false alerts
 
-In the project directory, you can run:
+## Model Details
 
-### `npm start`
+- **Dataset**: ESC-50 Environmental Sound Dataset
+- **Architecture**:
+  - CNN for spatial feature extraction (Mel Spectrograms)
+  - Bi-GRU for temporal modeling
+  - Attention mechanism for temporal focus
+- **Input**: 5-second audio clips (22050 Hz)
+- **Output**: 50 environmental sound classes
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+##  Dangerous Sounds Detected
 
-### `npm test`
+The system triggers alerts for the following sounds:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Fire crackling
+- Thunderstorm
+- Rain / Water flow
+- Strong wind
+- Siren
 
-### `npm run build`
+(Labels follow ESC-50 naming internally and are mapped to human-friendly names in the UI.)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+##  Tech Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Frontend
+- React
+- Web Audio API
+- Canvas API (waveform visualization)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Backend
+- FastAPI
+- TensorFlow / Keras
+- Librosa
+- NumPy
 
-### `npm run eject`
+### ML / Audio
+- CRNN (CNN + Bi-GRU)
+- Attention Layer
+- Mel Spectrograms
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Project Structure
+project-root/<br>
+│
+├── backend/<br>
+│ ├─ ─ app.py<br>
+│ ├─ ─ model_utils.py<br>
+│ ├─ ─ audio_utils.py<br>
+│ ├─ ─ alert.py<br>
+│ ├─ ─ model/<br>
+│ │ ├─ ─ ─ esc50_crnn_model.h5<br>
+│ │ └─ ─ ─ label_encoder.pkl<br>
+│ └ ── .env<br>
+│
+├── frontend/<br>
+│ ├─ ─ src/<br>
+│ │ └─ ─ ─ App.js<br>
+│ └─ ─ ─ package.json<br>
+│ 
+├── README.md<br>
+└── .gitignore<br>
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Setup Instructions
+- git clone "URL OF THE REPO"
 
-## Learn More
+###  Backend Setup
+- cd backend
+- pip install -r requirements.txt
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+###  Frontend Setup
+- cd frontend
+- npm install
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Run Backend
+- uvicorn app:app --reload
 
-### Code Splitting
+#### Run Frontend
+- npm start
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## .env
+- EMAIL_SENDER=your_email@gmail.com
+- EMAIL_PASSWORD=your_app_password
+- EMAIL_RECEIVER=your_email@gmail.com
+(For App Password you need to setup app password in Google Accounts->App Passwords->Setup)
 
-### Analyzing the Bundle Size
+##Backend Port=http://localhost:8000
+##Frontend Port=http://localhost:3000
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+**Email Alerts**
+- Alerts are sent only when:
+- Sound is classified as dangerous
+- Confidence exceeds threshold(>0.75)
+- Same sound is detected consistently (temporal smoothing)
+- This prevents false positives.
 
-### Making a Progressive Web App
+**Future Improvements**
+- Push notifications (mobile)
+- Docker deployment
+- Cloud inference
+- Multi-microphone support
+- Custom retraining interface
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+<img width="1920" height="1008" alt="Screenshot 2025-12-14 215006" src="https://github.com/user-attachments/assets/a7224f97-8a22-410e-85c8-f2cbb336993a" />
 
-### Advanced Configuration
+<img width="1920" height="1008" alt="Screenshot 2025-12-14 225118" src="https://github.com/user-attachments/assets/cf0e124d-be3c-41f3-b570-aa78c4bed631" />
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+![emailAlert](https://github.com/user-attachments/assets/9bcf817a-bc1c-4cce-9223-b068477a454f)
 
-### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
