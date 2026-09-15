@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+numpy
+librosa
+tensorflow
+python-multipart
+scikit-learn
+twilio
+python-dotenv
+
+
+# uvicorn app:app --reload
+
