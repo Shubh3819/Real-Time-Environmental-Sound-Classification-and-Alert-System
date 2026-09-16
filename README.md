@@ -1,4 +1,6 @@
 # Real-Time Environmental Sound Classification and Alert System
+VISIT-APP:https://real-time-environmental-sound-class.vercel.app/
+
 
 A full-stack real-time environmental sound monitoring system that listens to live microphone audio, classifies environmental sounds using a deep learning CRNN with Attention, visualizes the live waveform, maintains recent detection history, and sends push notifications when a dangerous sound is detected.
 
@@ -256,6 +258,26 @@ Resets the temporal prediction buffer and alert state for a new monitoring sessi
 - `.env`, `node_modules`, Python cache files, and personal files are excluded from Git.
 - For deployment, the frontend API URL must be changed from the local backend URL to the deployed backend URL.
 - The ntfy topic should be kept private/unpredictable or protected appropriately because public ntfy topics are accessible to anyone who knows the topic name.
+
+## Deployment
+
+The application is deployed using:
+
+- **Frontend:** Vercel
+- **Backend:** Render
+- **Notifications:** ntfy
+
+### Backend API
+
+https://real-time-environmental-sound.onrender.com
+
+The backend exposes the `/predict` and `/reset-monitoring` endpoints.
+
+The Render service may spin down after periods of inactivity on the free tier, so the first request after inactivity may take longer.
+
+### Frontend
+
+The React frontend is deployed on Vercel and communicates with the deployed Render backend.
 
 ## Future Improvements
 
