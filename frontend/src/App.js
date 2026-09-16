@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = "https://real-time-environmental-sound.onrender.com";
 
 const POLL_INTERVAL = 1000; // Predict every 1 second
 const WINDOW_SECONDS = 5;   // Send latest 5 seconds to backend
