@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from "react";
 const BACKEND_URL = "https://real-time-environmental-sound.onrender.com";
 
 const POLL_INTERVAL = 1000; // Predict every 1 second
-const WINDOW_SECONDS = 5;   // Send latest 5 seconds to backend
-
+const WINDOW_SECONDS = 5; // Send latest 5 seconds to backend
 
 function App() {
   const [listening, setListening] = useState(false);
+  const [backendLoading, setBackendLoading] = useState(false);
   const [label, setLabel] = useState(null);
   const [confidence, setConfidence] = useState(null);
   const [dangerous, setDangerous] = useState(false);
@@ -33,24 +33,18 @@ function App() {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
 
-
   /* =====================================================
      RESET BACKEND MONITORING STATE
   ===================================================== */
 
   const resetMonitoringState = async () => {
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/reset-monitoring`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/reset-monitoring`, {
+        method: "POST",
+      });
 
       if (!response.ok) {
-        throw new Error(
-          `Reset endpoint returned ${response.status}`
-        );
+        throw new Error(`Reset endpoint returned ${response.status}`);
       }
 
       const data = await response.json();
@@ -59,15 +53,11 @@ function App() {
 
       return true;
     } catch (error) {
-      console.error(
-        "❌ Could not reset backend monitoring state:",
-        error
-      );
+      console.error("❌ Could not reset backend monitoring state:", error);
 
       return false;
     }
   };
-
 
   /* =====================================================
      START MONITORING
@@ -75,6 +65,7 @@ function App() {
 
   const startRecording = async () => {
     try {
+      setBackendLoading(true);
       /*
        * IMPORTANT:
        * Reset backend state before starting a new session.
@@ -90,13 +81,12 @@ function App() {
       const resetSuccessful = await resetMonitoringState();
 
       if (!resetSuccessful) {
-        alert(
-          "Could not reset the monitoring system. Please make sure the backend is running."
-        );
+        setBackendLoading(false);
+        alert("Could not reset the monitoring system. Please try again.");
 
         return;
       }
-
+      setBackendLoading(false);
 
       /*
        * Reset frontend state.
@@ -111,54 +101,41 @@ function App() {
       audioBufferRef.current = [];
       predictionInProgressRef.current = false;
 
-
       /*
        * Ask for microphone permission.
        */
 
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
 
       streamRef.current = stream;
-
 
       /*
        * Create AudioContext.
        */
 
-      const audioContext =
-        new AudioContext();
+      const audioContext = new AudioContext();
 
-      audioContextRef.current =
-        audioContext;
-
+      audioContextRef.current = audioContext;
 
       /*
        * Microphone source.
        */
 
-      const source =
-        audioContext.createMediaStreamSource(
-          stream
-        );
+      const source = audioContext.createMediaStreamSource(stream);
 
       sourceRef.current = source;
-
 
       /*
        * Waveform analyser.
        */
 
-      const analyser =
-        audioContext.createAnalyser();
+      const analyser = audioContext.createAnalyser();
 
       analyser.fftSize = 2048;
 
-      analyserRef.current =
-        analyser;
-
+      analyserRef.current = analyser;
 
       /*
        * ScriptProcessorNode is deprecated,
@@ -166,16 +143,9 @@ function App() {
        * and keeps the implementation simple.
        */
 
-      const processor =
-        audioContext.createScriptProcessor(
-          4096,
-          1,
-          1
-        );
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-      processorRef.current =
-        processor;
-
+      processorRef.current = processor;
 
       /*
        * Clear previous audio.
@@ -183,48 +153,33 @@ function App() {
 
       audioBufferRef.current = [];
 
-
       /*
        * Collect microphone audio continuously.
        */
 
       processor.onaudioprocess = (event) => {
-        const input =
-          event.inputBuffer.getChannelData(0);
+        const input = event.inputBuffer.getChannelData(0);
 
-        audioBufferRef.current.push(
-          new Float32Array(input)
-        );
-
+        audioBufferRef.current.push(new Float32Array(input));
 
         /*
          * Keep approximately the latest
          * 6 seconds of audio.
          */
 
-        const maxSamples =
-          audioContext.sampleRate *
-          (WINDOW_SECONDS + 1);
+        const maxSamples = audioContext.sampleRate * (WINDOW_SECONDS + 1);
 
-        let totalSamples =
-          audioBufferRef.current.reduce(
-            (sum, buffer) =>
-              sum + buffer.length,
-            0
-          );
+        let totalSamples = audioBufferRef.current.reduce(
+          (sum, buffer) => sum + buffer.length,
+          0,
+        );
 
-
-        while (
-          totalSamples > maxSamples &&
-          audioBufferRef.current.length > 1
-        ) {
-          totalSamples -=
-            audioBufferRef.current[0].length;
+        while (totalSamples > maxSamples && audioBufferRef.current.length > 1) {
+          totalSamples -= audioBufferRef.current[0].length;
 
           audioBufferRef.current.shift();
         }
       };
-
 
       /*
        * Connect audio pipeline.
@@ -234,16 +189,12 @@ function App() {
 
       analyser.connect(processor);
 
-
       /*
        * Connecting to destination keeps
        * ScriptProcessorNode active.
        */
 
-      processor.connect(
-        audioContext.destination
-      );
-
+      processor.connect(audioContext.destination);
 
       /*
        * Start monitoring.
@@ -251,13 +202,11 @@ function App() {
 
       setListening(true);
 
-
       /*
        * Start waveform.
        */
 
       drawWaveform();
-
 
       /*
        * Start continuous prediction.
@@ -266,97 +215,71 @@ function App() {
        * 5 seconds of audio to FastAPI.
        */
 
-      predictionTimerRef.current =
-        setInterval(
-          predictCurrentWindow,
-          POLL_INTERVAL
-        );
-
-    } catch (error) {
-      console.error(
-        "❌ Microphone error:",
-        error
+      predictionTimerRef.current = setInterval(
+        predictCurrentWindow,
+        POLL_INTERVAL,
       );
+    } catch (error) {
+      setBackendLoading(false);
+
+      console.error("❌ Microphone error:", error);
 
       alert(
-        "Could not access the microphone. Please allow microphone permission."
+        "Could not access the microphone. Please allow microphone permission.",
       );
     }
   };
-
 
   /* =====================================================
      PREDICT CURRENT 5-SECOND WINDOW
   ===================================================== */
 
   const predictCurrentWindow = async () => {
-    const audioContext =
-      audioContextRef.current;
+    const audioContext = audioContextRef.current;
 
     if (!audioContext) {
       return;
     }
-
 
     /*
      * Don't start another request if the
      * previous prediction is still running.
      */
 
-    if (
-      predictionInProgressRef.current
-    ) {
+    if (predictionInProgressRef.current) {
       return;
     }
 
+    const buffers = audioBufferRef.current;
 
-    const buffers =
-      audioBufferRef.current;
-
-    if (
-      !buffers ||
-      buffers.length === 0
-    ) {
+    if (!buffers || buffers.length === 0) {
       return;
     }
-
 
     /*
      * Combine all stored audio.
      */
 
-    const audio =
-      flattenBuffers(buffers);
-
+    const audio = flattenBuffers(buffers);
 
     /*
      * We need a complete 5-second window
      * before sending anything.
      */
 
-    const requiredSamples =
-      Math.floor(
-        audioContext.sampleRate *
-        WINDOW_SECONDS
-      );
+    const requiredSamples = Math.floor(
+      audioContext.sampleRate * WINDOW_SECONDS,
+    );
 
-    if (
-      audio.length < requiredSamples
-    ) {
+    if (audio.length < requiredSamples) {
       return;
     }
-
 
     /*
      * Take only the latest 5 seconds.
      */
 
-    const latestAudio =
-      audio.slice(
-        audio.length -
-          requiredSamples
-      );
-
+    const latestAudio = audio.slice(audio.length - requiredSamples);
 
     /*
      * Create WAV using the browser's
@@ -365,58 +288,31 @@ function App() {
      * Backend will resample to 22050 Hz.
      */
 
-    const wavBlob =
-      encodeWAV(
-        latestAudio,
-        audioContext.sampleRate
-      );
+    const wavBlob = encodeWAV(latestAudio, audioContext.sampleRate);
 
+    const formData = new FormData();
 
-    const formData =
-      new FormData();
+    formData.append("file", wavBlob, "audio.wav");
 
-    formData.append(
-      "file",
-      wavBlob,
-      "audio.wav"
-    );
-
-
-    predictionInProgressRef.current =
-      true;
-
+    predictionInProgressRef.current = true;
 
     try {
-      const response =
-        await fetch(
-          `${BACKEND_URL}/predict`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
+      const response = await fetch(`${BACKEND_URL}/predict`, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
-        throw new Error(
-          `Backend returned ${response.status}`
-        );
+        throw new Error(`Backend returned ${response.status}`);
       }
 
-
-      const data =
-        await response.json();
-
+      const data = await response.json();
 
       if (data.error) {
-        console.error(
-          "Backend error:",
-          data.error
-        );
+        console.error("Backend error:", data.error);
 
         return;
       }
-
 
       /*
        * Update current prediction.
@@ -424,20 +320,14 @@ function App() {
 
       setLabel(data.label);
 
-      setConfidence(
-        data.confidence
-      );
-
+      setConfidence(data.confidence);
 
       /*
        * IMPORTANT:
        * Use the backend's dangerous value.
        */
 
-      setDangerous(
-        Boolean(data.dangerous)
-      );
-
+      setDangerous(Boolean(data.dangerous));
 
       /*
        * alert_triggered is true only when
@@ -445,19 +335,14 @@ function App() {
        * ntfy notification.
        */
 
-      setAlertTriggered(
-        Boolean(data.alert_triggered)
-      );
-
+      setAlertTriggered(Boolean(data.alert_triggered));
 
       /* =================================================
          UPDATE HISTORY
       ================================================= */
 
       setHistory((previous) => {
-        const last =
-          previous[0];
-
+        const last = previous[0];
 
         /*
          * Don't add the exact same
@@ -467,45 +352,27 @@ function App() {
         if (
           last &&
           last.label === data.label &&
-          Date.now() -
-            last.timestamp <
-            3000
+          Date.now() - last.timestamp < 3000
         ) {
           return previous;
         }
 
-
         const newDetection = {
           label: data.label,
-          confidence:
-            data.confidence,
-          dangerous:
-            Boolean(data.dangerous),
-          timestamp:
-            Date.now(),
-          time:
-            new Date().toLocaleTimeString(),
+          confidence: data.confidence,
+          dangerous: Boolean(data.dangerous),
+          timestamp: Date.now(),
+          time: new Date().toLocaleTimeString(),
         };
 
-
-        return [
-          newDetection,
-          ...previous.slice(0, 4),
-        ];
+        return [newDetection, ...previous.slice(0, 4)];
       });
-
     } catch (error) {
-      console.error(
-        "❌ Prediction request failed:",
-        error
-      );
-
+      console.error("❌ Prediction request failed:", error);
     } finally {
-      predictionInProgressRef.current =
-        false;
+      predictionInProgressRef.current = false;
     }
   };
-
 
   /* =====================================================
      STOP MONITORING
@@ -514,134 +381,87 @@ function App() {
   const stopRecording = async () => {
     setListening(false);
 
-
     /*
      * Stop prediction timer.
      */
 
-    if (
-      predictionTimerRef.current
-    ) {
-      clearInterval(
-        predictionTimerRef.current
-      );
+    if (predictionTimerRef.current) {
+      clearInterval(predictionTimerRef.current);
 
-      predictionTimerRef.current =
-        null;
+      predictionTimerRef.current = null;
     }
-
 
     /*
      * Stop waveform.
      */
 
-    if (
-      animationRef.current
-    ) {
-      cancelAnimationFrame(
-        animationRef.current
-      );
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
 
-      animationRef.current =
-        null;
+      animationRef.current = null;
     }
-
 
     /*
      * Disconnect audio nodes.
      */
 
     try {
-      if (
-        processorRef.current
-      ) {
+      if (processorRef.current) {
         processorRef.current.disconnect();
 
-        processorRef.current.onaudioprocess =
-          null;
+        processorRef.current.onaudioprocess = null;
       }
 
-
-      if (
-        analyserRef.current
-      ) {
+      if (analyserRef.current) {
         analyserRef.current.disconnect();
       }
 
-
-      if (
-        sourceRef.current
-      ) {
+      if (sourceRef.current) {
         sourceRef.current.disconnect();
       }
-
     } catch (error) {
-      console.error(
-        "Audio cleanup error:",
-        error
-      );
+      console.error("Audio cleanup error:", error);
     }
-
 
     /*
      * Stop microphone.
      */
 
-    if (
-      streamRef.current
-    ) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
 
-      streamRef.current =
-        null;
+      streamRef.current = null;
     }
-
 
     /*
      * Close AudioContext.
      */
 
-    if (
-      audioContextRef.current
-    ) {
+    if (audioContextRef.current) {
       try {
         await audioContextRef.current.close();
-
       } catch (error) {
-        console.error(
-          "AudioContext close error:",
-          error
-        );
+        console.error("AudioContext close error:", error);
       }
 
-      audioContextRef.current =
-        null;
+      audioContextRef.current = null;
     }
-
 
     /*
      * Clear references.
      */
 
-    processorRef.current =
-      null;
+    processorRef.current = null;
 
-    analyserRef.current =
-      null;
+    analyserRef.current = null;
 
-    sourceRef.current =
-      null;
+    sourceRef.current = null;
 
-    audioBufferRef.current =
-      [];
+    audioBufferRef.current = [];
 
-    predictionInProgressRef.current =
-      false;
-
+    predictionInProgressRef.current = false;
 
     /*
      * IMPORTANT:
@@ -671,125 +491,67 @@ function App() {
     await resetMonitoringState();
   };
 
-
   /* =====================================================
      WAVEFORM
   ===================================================== */
 
   const drawWaveform = () => {
-    const canvas =
-      canvasRef.current;
+    const canvas = canvasRef.current;
 
-    const analyser =
-      analyserRef.current;
+    const analyser = analyserRef.current;
 
-    if (
-      !canvas ||
-      !analyser
-    ) {
+    if (!canvas || !analyser) {
       return;
     }
 
+    const ctx = canvas.getContext("2d");
 
-    const ctx =
-      canvas.getContext("2d");
+    const bufferLength = analyser.frequencyBinCount;
 
-    const bufferLength =
-      analyser.frequencyBinCount;
-
-    const dataArray =
-      new Uint8Array(
-        bufferLength
-      );
-
+    const dataArray = new Uint8Array(bufferLength);
 
     const draw = () => {
-      if (
-        !analyserRef.current
-      ) {
+      if (!analyserRef.current) {
         return;
       }
 
+      analyser.getByteTimeDomainData(dataArray);
 
-      analyser.getByteTimeDomainData(
-        dataArray
-      );
-
-
-      ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.lineWidth = 2;
 
-      ctx.strokeStyle =
-        "#00ffd5";
+      ctx.strokeStyle = "#00ffd5";
 
       ctx.beginPath();
 
-
-      const sliceWidth =
-        canvas.width /
-        bufferLength;
+      const sliceWidth = canvas.width / bufferLength;
 
       let x = 0;
 
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
 
-      for (
-        let i = 0;
-        i < bufferLength;
-        i++
-      ) {
-        const v =
-          dataArray[i] /
-          128.0;
-
-        const y =
-          (v *
-            canvas.height) /
-          2;
-
+        const y = (v * canvas.height) / 2;
 
         if (i === 0) {
-          ctx.moveTo(
-            x,
-            y
-          );
-
+          ctx.moveTo(x, y);
         } else {
-          ctx.lineTo(
-            x,
-            y
-          );
+          ctx.lineTo(x, y);
         }
-
 
         x += sliceWidth;
       }
 
-
-      ctx.lineTo(
-        canvas.width,
-        canvas.height / 2
-      );
+      ctx.lineTo(canvas.width, canvas.height / 2);
 
       ctx.stroke();
 
-
-      animationRef.current =
-        requestAnimationFrame(
-          draw
-        );
+      animationRef.current = requestAnimationFrame(draw);
     };
-
 
     draw();
   };
-
 
   /* =====================================================
      CLEANUP WHEN COMPONENT UNMOUNTS
@@ -797,58 +559,39 @@ function App() {
 
   useEffect(() => {
     return () => {
-
       /*
        * Stop prediction timer.
        */
 
-      if (
-        predictionTimerRef.current
-      ) {
-        clearInterval(
-          predictionTimerRef.current
-        );
+      if (predictionTimerRef.current) {
+        clearInterval(predictionTimerRef.current);
       }
-
 
       /*
        * Stop waveform animation.
        */
 
-      if (
-        animationRef.current
-      ) {
-        cancelAnimationFrame(
-          animationRef.current
-        );
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
       }
-
 
       /*
        * Stop microphone.
        */
 
-      if (
-        streamRef.current
-      ) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) => {
-            track.stop();
-          });
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+        });
       }
-
 
       /*
        * Close AudioContext.
        */
 
-      if (
-        audioContextRef.current
-      ) {
+      if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-
 
       /*
        * Reset backend state.
@@ -858,20 +601,13 @@ function App() {
        * for an async operation.
        */
 
-      fetch(
-        `${BACKEND_URL}/reset-monitoring`,
-        {
-          method: "POST",
-        }
-      ).catch((error) => {
-        console.error(
-          "Could not reset backend during cleanup:",
-          error
-        );
+      fetch(`${BACKEND_URL}/reset-monitoring`, {
+        method: "POST",
+      }).catch((error) => {
+        console.error("Could not reset backend during cleanup:", error);
       });
     };
   }, []);
-
 
   /* =====================================================
      UI
@@ -879,61 +615,47 @@ function App() {
 
   return (
     <div style={styles.page}>
-
       <div style={styles.card}>
+        <h1 style={styles.title}>Environmental Sound Monitor</h1>
 
-        <h1 style={styles.title}>
-          Environmental Sound Monitor
-        </h1>
-
-
-        <p style={styles.subtitle}>
-          Real-time environmental sound detection
-        </p>
-
+        <p style={styles.subtitle}>Real-time environmental sound detection</p>
 
         {/* START / STOP BUTTON */}
 
         <button
-          onClick={
-            listening
-              ? stopRecording
-              : startRecording
-          }
+          onClick={listening ? stopRecording : startRecording}
+          disabled={backendLoading}
           style={{
             ...styles.button,
-            background:
-              listening
-                ? "#ff4d4d"
-                : "#00c896",
+            background: listening ? "#ff4d4d" : "#00c896",
           }}
         >
           {listening
             ? "Stop Monitoring"
-            : "Start Monitoring"}
+            : backendLoading
+              ? "Waking up AI backend..."
+              : "Start Monitoring"}
         </button>
 
+        {backendLoading && (
+          <p style={styles.info}>
+            ⏳ Waking up the AI backend... This may take 1–2 minutes on the free
+            hosting tier.
+          </p>
+        )}
 
         {/* STATUS */}
 
         <div style={styles.status}>
-
           <span
             style={{
               ...styles.statusDot,
-              background:
-                listening
-                  ? "#00ff88"
-                  : "#777",
+              background: listening ? "#00ff88" : "#777",
             }}
           />
 
-          {listening
-            ? "Microphone active"
-            : "Monitoring stopped"}
-
+          {listening ? "Microphone active" : "Monitoring stopped"}
         </div>
-
 
         {/* WAVEFORM */}
 
@@ -944,16 +666,11 @@ function App() {
           style={{
             marginTop: 25,
             width: "100%",
-            display:
-              listening
-                ? "block"
-                : "none",
+            display: listening ? "block" : "none",
             borderRadius: 12,
-            background:
-              "rgba(0,0,0,0.2)",
+            background: "rgba(0,0,0,0.2)",
           }}
         />
-
 
         {/* CURRENT RESULT */}
 
@@ -961,164 +678,75 @@ function App() {
           <div
             style={{
               ...styles.result,
-              borderColor:
-                dangerous
-                  ? "#ff4d4d"
-                  : "#00c896",
-              background:
-                dangerous
-                  ? "rgba(255,77,77,0.12)"
-                  : "rgba(0,200,150,0.10)",
+              borderColor: dangerous ? "#ff4d4d" : "#00c896",
+              background: dangerous
+                ? "rgba(255,77,77,0.12)"
+                : "rgba(0,200,150,0.10)",
             }}
           >
+            <div style={styles.resultHeader}>
+              <h2 style={styles.resultTitle}>{label.toUpperCase()}</h2>
 
-            <div
-              style={
-                styles.resultHeader
-              }
-            >
-
-              <h2
-                style={
-                  styles.resultTitle
-                }
-              >
-                {label.toUpperCase()}
-              </h2>
-
-
-              {dangerous && (
-                <span
-                  style={
-                    styles.warning
-                  }
-                >
-                  ⚠ DANGER
-                </span>
-              )}
-
+              {dangerous && <span style={styles.warning}>⚠ DANGER</span>}
             </div>
 
+            <p style={styles.confidence}>{(confidence * 100).toFixed(1)}%</p>
 
-            <p
-              style={
-                styles.confidence
-              }
-            >
-              {(
-                confidence * 100
-              ).toFixed(1)}
-              %
-            </p>
-
-
-            <p
-              style={
-                styles.confidenceLabel
-              }
-            >
-              Confidence
-            </p>
-
+            <p style={styles.confidenceLabel}>Confidence</p>
 
             {alertTriggered && (
-              <div
-                style={
-                  styles.alertMessage
-                }
-              >
+              <div style={styles.alertMessage}>
                 🔔 Alert sent to your device
               </div>
             )}
-
           </div>
         )}
-
 
         {/* HISTORY */}
 
         {history.length > 0 && (
-          <div
-            style={styles.history}
-          >
+          <div style={styles.history}>
+            <h3>Recent Detections</h3>
 
-            <h3>
-              Recent Detections
-            </h3>
+            {history.map((item, index) => (
+              <div key={index} style={styles.historyItem}>
+                <span>{item.time}</span>
 
-
-            {history.map(
-              (item, index) => (
-                <div
-                  key={index}
-                  style={
-                    styles.historyItem
-                  }
+                <strong
+                  style={{
+                    color: item.dangerous ? "#ff6b6b" : "#fff",
+                  }}
                 >
+                  {item.label}
+                </strong>
 
-                  <span>
-                    {item.time}
-                  </span>
-
-
-                  <strong
-                    style={{
-                      color:
-                        item.dangerous
-                          ? "#ff6b6b"
-                          : "#fff",
-                    }}
-                  >
-                    {item.label}
-                  </strong>
-
-
-                  <span>
-                    {(
-                      item.confidence *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </span>
-
-                </div>
-              )
-            )}
-
+                <span>{(item.confidence * 100).toFixed(0)}%</span>
+              </div>
+            ))}
           </div>
         )}
-
 
         {/* INFORMATION */}
 
         {listening && (
-          <p
-            style={styles.info}
-          >
-            Analyzing the latest
-            5 seconds of audio
-            every second...
+          <p style={styles.info}>
+            Analyzing the latest 5 seconds of audio every second...
           </p>
         )}
-
       </div>
-
     </div>
   );
 }
-
 
 /* =====================================================
    STYLES
 ===================================================== */
 
 const styles = {
-
   page: {
     minHeight: "100vh",
 
-    background:
-      "radial-gradient(circle at top, #1f3c47, #0a1f28)",
+    background: "radial-gradient(circle at top, #1f3c47, #0a1f28)",
 
     display: "flex",
 
@@ -1133,7 +761,6 @@ const styles = {
     boxSizing: "border-box",
   },
 
-
   card: {
     width: "100%",
 
@@ -1143,18 +770,14 @@ const styles = {
 
     borderRadius: 20,
 
-    background:
-      "rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.08)",
 
-    backdropFilter:
-      "blur(15px)",
+    backdropFilter: "blur(15px)",
 
-    boxShadow:
-      "0 30px 60px rgba(0,0,0,0.5)",
+    boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
 
     textAlign: "center",
   },
-
 
   title: {
     marginBottom: 8,
@@ -1162,20 +785,16 @@ const styles = {
     letterSpacing: 1,
   },
 
-
   subtitle: {
     marginTop: 0,
 
     marginBottom: 30,
 
-    color:
-      "rgba(255,255,255,0.65)",
+    color: "rgba(255,255,255,0.65)",
   },
 
-
   button: {
-    padding:
-      "14px 36px",
+    padding: "14px 36px",
 
     borderRadius: 30,
 
@@ -1190,14 +809,12 @@ const styles = {
     fontWeight: 600,
   },
 
-
   status: {
     marginTop: 15,
 
     fontSize: 14,
 
-    color:
-      "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.7)",
 
     display: "flex",
 
@@ -1208,7 +825,6 @@ const styles = {
     gap: 8,
   },
 
-
   statusDot: {
     width: 9,
 
@@ -1218,7 +834,6 @@ const styles = {
 
     display: "inline-block",
   },
-
 
   result: {
     marginTop: 30,
@@ -1231,10 +846,8 @@ const styles = {
 
     color: "#fff",
 
-    transition:
-      "all 0.3s ease",
+    transition: "all 0.3s ease",
   },
-
 
   resultHeader: {
     display: "flex",
@@ -1246,11 +859,9 @@ const styles = {
     gap: 12,
   },
 
-
   resultTitle: {
     margin: 0,
   },
-
 
   warning: {
     fontSize: 13,
@@ -1260,24 +871,19 @@ const styles = {
     color: "#ff6b6b",
   },
 
-
   confidence: {
     fontSize: 38,
 
     fontWeight: 700,
 
-    margin:
-      "10px 0 0",
+    margin: "10px 0 0",
   },
-
 
   confidenceLabel: {
     margin: 0,
 
-    color:
-      "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.6)",
   },
-
 
   alertMessage: {
     marginTop: 15,
@@ -1286,12 +892,10 @@ const styles = {
 
     borderRadius: 10,
 
-    background:
-      "rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.08)",
 
     fontSize: 14,
   },
-
 
   history: {
     marginTop: 30,
@@ -1299,301 +903,153 @@ const styles = {
     textAlign: "left",
   },
 
-
   historyItem: {
     display: "flex",
 
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
 
     alignItems: "center",
 
-    padding:
-      "10px 0",
+    padding: "10px 0",
 
-    borderBottom:
-      "1px solid rgba(255,255,255,0.2)",
+    borderBottom: "1px solid rgba(255,255,255,0.2)",
   },
-
 
   info: {
     marginTop: 20,
 
     fontSize: 13,
 
-    color:
-      "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.5)",
   },
 };
-
 
 /* =====================================================
    WAV ENCODER
 ===================================================== */
 
-function encodeWAV(
-  audio,
-  sampleRate
-) {
-  const wav =
-    new ArrayBuffer(
-      44 +
-        audio.length * 2
-    );
+function encodeWAV(audio, sampleRate) {
+  const wav = new ArrayBuffer(44 + audio.length * 2);
 
-  const view =
-    new DataView(wav);
-
+  const view = new DataView(wav);
 
   /*
    * RIFF
    */
 
-  writeString(
-    view,
-    0,
-    "RIFF"
-  );
+  writeString(view, 0, "RIFF");
 
-
-  view.setUint32(
-    4,
-    36 +
-      audio.length * 2,
-    true
-  );
-
+  view.setUint32(4, 36 + audio.length * 2, true);
 
   /*
    * WAVE
    */
 
-  writeString(
-    view,
-    8,
-    "WAVE"
-  );
-
+  writeString(view, 8, "WAVE");
 
   /*
    * fmt
    */
 
-  writeString(
-    view,
-    12,
-    "fmt "
-  );
+  writeString(view, 12, "fmt ");
 
-
-  view.setUint32(
-    16,
-    16,
-    true
-  );
-
+  view.setUint32(16, 16, true);
 
   /*
    * PCM format
    */
 
-  view.setUint16(
-    20,
-    1,
-    true
-  );
-
+  view.setUint16(20, 1, true);
 
   /*
    * Mono
    */
 
-  view.setUint16(
-    22,
-    1,
-    true
-  );
-
+  view.setUint16(22, 1, true);
 
   /*
    * Sample rate
    */
 
-  view.setUint32(
-    24,
-    sampleRate,
-    true
-  );
-
+  view.setUint32(24, sampleRate, true);
 
   /*
    * Byte rate
    */
 
-  view.setUint32(
-    28,
-    sampleRate * 2,
-    true
-  );
-
+  view.setUint32(28, sampleRate * 2, true);
 
   /*
    * Block align
    */
 
-  view.setUint16(
-    32,
-    2,
-    true
-  );
-
+  view.setUint16(32, 2, true);
 
   /*
    * Bits per sample
    */
 
-  view.setUint16(
-    34,
-    16,
-    true
-  );
-
+  view.setUint16(34, 16, true);
 
   /*
    * data
    */
 
-  writeString(
-    view,
-    36,
-    "data"
-  );
+  writeString(view, 36, "data");
 
-
-  view.setUint32(
-    40,
-    audio.length * 2,
-    true
-  );
-
+  view.setUint32(40, audio.length * 2, true);
 
   /*
    * Audio data
    */
 
-  floatTo16BitPCM(
-    view,
-    44,
-    audio
-  );
+  floatTo16BitPCM(view, 44, audio);
 
-
-  return new Blob(
-    [view],
-    {
-      type: "audio/wav",
-    }
-  );
+  return new Blob([view], {
+    type: "audio/wav",
+  });
 }
-
 
 /* =====================================================
    FLATTEN AUDIO BUFFERS
 ===================================================== */
 
-function flattenBuffers(
-  buffers
-) {
-  const length =
-    buffers.reduce(
-      (sum, buffer) =>
-        sum + buffer.length,
-      0
-    );
+function flattenBuffers(buffers) {
+  const length = buffers.reduce((sum, buffer) => sum + buffer.length, 0);
 
-
-  const result =
-    new Float32Array(
-      length
-    );
-
+  const result = new Float32Array(length);
 
   let offset = 0;
 
+  buffers.forEach((buffer) => {
+    result.set(buffer, offset);
 
-  buffers.forEach(
-    (buffer) => {
-      result.set(
-        buffer,
-        offset
-      );
-
-      offset +=
-        buffer.length;
-    }
-  );
-
+    offset += buffer.length;
+  });
 
   return result;
 }
-
 
 /* =====================================================
    CONVERT FLOAT32 → 16-BIT PCM
 ===================================================== */
 
-function floatTo16BitPCM(
-  view,
-  offset,
-  input
-) {
-  for (
-    let i = 0;
-    i < input.length;
-    i++,
-    offset += 2
-  ) {
-    const sample =
-      Math.max(
-        -1,
-        Math.min(
-          1,
-          input[i]
-        )
-      );
+function floatTo16BitPCM(view, offset, input) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    const sample = Math.max(-1, Math.min(1, input[i]));
 
-
-    view.setInt16(
-      offset,
-      sample < 0
-        ? sample * 0x8000
-        : sample * 0x7fff,
-      true
-    );
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
   }
 }
-
 
 /* =====================================================
    WRITE STRING INTO WAV
 ===================================================== */
 
-function writeString(
-  view,
-  offset,
-  string
-) {
-  for (
-    let i = 0;
-    i < string.length;
-    i++
-  ) {
-    view.setUint8(
-      offset + i,
-      string.charCodeAt(i)
-    );
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
-
 
 export default App;
